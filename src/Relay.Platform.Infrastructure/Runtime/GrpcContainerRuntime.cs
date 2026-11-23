@@ -5,6 +5,7 @@ using Relay.Chassis.Primitives;
 using Relay.Common.V1;
 using Relay.Platform.Application.Runtime;
 using Relay.Platform.Domain.Apps;
+using Relay.Platform.Domain.EnvVars;
 using Relay.Platform.Domain.Projects;
 using Relay.Platform.Domain.Releases;
 using Relay.Runtime.V1;
@@ -15,10 +16,15 @@ namespace Relay.Platform.Infrastructure.Runtime;
 
 public sealed class GrpcContainerRuntime(RuntimeService.RuntimeServiceClient client, IOptions<RuntimeOptions> options) : IContainerRuntime
 {
-    public Task<Result<WorkloadObservation>> Apply(Project project, App app, Release release, CancellationToken cancellationToken) =>
+    public Task<Result<WorkloadObservation>> Apply(
+        Project project,
+        App app,
+        Release release,
+        IReadOnlyList<EnvVar> environment,
+        CancellationToken cancellationToken) =>
         Call(async () =>
         {
-            using var call = client.ApplyWorkload(new ApplyWorkloadRequest { Workload = ToWorkload(project, app, release) }, cancellationToken: cancellationToken);
+            using var call = client.ApplyWorkload(new ApplyWorkloadRequest { Workload = ToWorkload(project, app, release, environment) }, cancellationToken: cancellationToken);
             WorkloadStatus? status = null;
             await foreach (var update in call.ResponseStream.ReadAllAsync(cancellationToken))
             {
@@ -73,7 +79,7 @@ public sealed class GrpcContainerRuntime(RuntimeService.RuntimeServiceClient cli
     private static WorkloadObservation ToObservation(WorkloadStatus status) =>
         new(WorkloadPhaseMapping.ToAppPhase(status.Phase), status.ImageDigest);
 
-    private Workload ToWorkload(Project project, App app, Release release)
+    private Workload ToWorkload(Project project, App app, Release release, IReadOnlyList<EnvVar> environment)
     {
         var spec = new WorkloadSpec
         {
@@ -84,6 +90,7 @@ public sealed class GrpcContainerRuntime(RuntimeService.RuntimeServiceClient cli
                 CpuLimitMillicores = (uint)app.Spec.Resources.CpuLimitMillicores,
             },
         };
+        spec.Environment.AddRange(environment.Select(envVar => new EnvironmentVariable { Name = envVar.Name.Value, Value = envVar.Value }));
         if (app.Spec.Exposure is { } exposure)
         {
             spec.Routes.Add(new Route { Host = $"{exposure.Subdomain}.{options.Value.AppsDomain}", Port = (uint)exposure.Port });

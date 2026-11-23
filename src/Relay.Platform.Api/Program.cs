@@ -1,5 +1,6 @@
 using Relay.Chassis.Hosting;
 using Relay.Platform.Api.Apps;
+using Relay.Platform.Api.EnvVars;
 using Relay.Platform.Api.Projects;
 using Relay.Platform.Api.Releases;
 using Relay.Platform.Application;
@@ -14,5 +15,6 @@ app.MapRelayServiceDefaults();
 app.MapGrpcService<ProjectEndpoint>();
 app.MapGrpcService<AppEndpoint>();
 app.MapGrpcService<ReleaseEndpoint>();
+app.MapGrpcService<EnvVarEndpoint>();
 
 await app.RunAsync();

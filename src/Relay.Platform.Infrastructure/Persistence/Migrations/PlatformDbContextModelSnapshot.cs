@@ -172,6 +172,53 @@ namespace Relay.Platform.Infrastructure.Persistence.Migrations
                     b.ToTable("apps", "platform");
                 });
 
+            modelBuilder.Entity("Relay.Platform.Domain.EnvVars.EnvVar", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("AppId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("app_id");
+
+                    b.Property<bool>("IsSecret")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_secret");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<Guid?>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("value");
+
+                    b.HasKey("Id")
+                        .HasName("pk_env_vars");
+
+                    b.HasIndex("ProjectId")
+                        .HasDatabaseName("ix_env_vars_project_id");
+
+                    b.HasIndex("AppId", "ProjectId", "Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_env_vars_app_id_project_id_name");
+
+                    NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("AppId", "ProjectId", "Name"), false);
+
+                    b.ToTable("env_vars", "platform");
+                });
+
             modelBuilder.Entity("Relay.Platform.Domain.Projects.Project", b =>
                 {
                     b.Property<Guid>("Id")
@@ -264,6 +311,19 @@ namespace Relay.Platform.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_apps_projects_project_id");
+                });
+
+            modelBuilder.Entity("Relay.Platform.Domain.EnvVars.EnvVar", b =>
+                {
+                    b.HasOne("Relay.Platform.Domain.Apps.App", null)
+                        .WithMany()
+                        .HasForeignKey("AppId")
+                        .HasConstraintName("fk_env_vars_apps_app_id");
+
+                    b.HasOne("Relay.Platform.Domain.Projects.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .HasConstraintName("fk_env_vars_projects_project_id");
                 });
 
             modelBuilder.Entity("Relay.Platform.Domain.Releases.Release", b =>

@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Relay.Platform.Application.Apps;
+using Relay.Platform.Application.EnvVars;
 using Relay.Platform.Application.Projects;
 using Relay.Platform.Application.Releases;
 
@@ -25,6 +26,9 @@ public static class ApplicationRegistration
         services.AddScoped<ApplyRelease>();
         services.AddScoped<GetRelease>();
         services.AddScoped<ListReleases>();
+        services.AddScoped<SetEnvVar>();
+        services.AddScoped<ListEnvVars>();
+        services.AddScoped<DeleteEnvVar>();
         return services;
     }
 }
