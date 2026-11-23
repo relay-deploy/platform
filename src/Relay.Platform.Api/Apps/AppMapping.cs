@@ -55,7 +55,7 @@ internal static class AppMapping
             return resources.Error;
         }
 
-        return new AppSpec(new ImageSource(image.Value), exposure?.Value, resources.Value);
+        return new AppSpec { Source = new ImageSource(image.Value), Exposure = exposure?.Value, Resources = resources.Value };
     }
 
     private static Result<Exposure> ToDomain(this ExposureMessage exposure)

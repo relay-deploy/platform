@@ -5,14 +5,14 @@ using Relay.Platform.Domain.Apps;
 
 namespace Relay.Platform.Application.Apps;
 
-public sealed class AppRuntimeOperation(IAppRepository apps, IUnitOfWork unitOfWork, TimeProvider time)
+public sealed class AppRuntimeOperation(IPlatformDbContext db, TimeProvider time)
 {
     public async Task<Result<App>> Run(
         AppId id,
         Func<AppId, CancellationToken, Task<Result<WorkloadObservation>>> operation,
         CancellationToken cancellationToken)
     {
-        var app = await apps.Find(id, cancellationToken);
+        var app = await db.Apps.ById(id, cancellationToken);
         if (app is null)
         {
             return AppErrors.NotFound(id);
@@ -31,8 +31,7 @@ public sealed class AppRuntimeOperation(IAppRepository apps, IUnitOfWork unitOfW
         }
 
         app.Observe(observed.Value.Phase, time.GetUtcNow());
-        await apps.Update(app, cancellationToken);
-        await unitOfWork.Commit(cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
         return app;
     }
 }

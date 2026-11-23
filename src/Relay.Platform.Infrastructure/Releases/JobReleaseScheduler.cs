@@ -6,6 +6,5 @@ namespace Relay.Platform.Infrastructure.Releases;
 
 public sealed class JobReleaseScheduler(IJobScheduler jobs) : IReleaseScheduler
 {
-    public Task Schedule(ReleaseId release, CancellationToken cancellationToken) =>
-        jobs.Schedule(new ApplyReleaseJob(release.Value), $"release:{release}", cancellationToken);
+    public void Schedule(ReleaseId release) => jobs.Schedule(new ApplyReleaseJob(release.Value), $"release:{release}");
 }

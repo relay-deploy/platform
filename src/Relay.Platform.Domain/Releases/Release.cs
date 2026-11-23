@@ -4,26 +4,14 @@ namespace Relay.Platform.Domain.Releases;
 
 public sealed class Release
 {
-    private Release(
-        ReleaseId id,
-        AppId appId,
-        ImageReference image,
-        string? imageDigest,
-        ReleaseTrigger trigger,
-        ReleasePhase phase,
-        ReleaseFailure? failure,
-        DateTimeOffset createdAt,
-        DateTimeOffset? finishedAt)
+    private Release(ReleaseId id, AppId appId, ImageReference image, ReleaseTrigger trigger, ReleasePhase phase, DateTimeOffset createdAt)
     {
         Id = id;
         AppId = appId;
         Image = image;
-        ImageDigest = imageDigest;
         Trigger = trigger;
         Phase = phase;
-        Failure = failure;
         CreatedAt = createdAt;
-        FinishedAt = finishedAt;
     }
 
     public ReleaseId Id { get; }
@@ -47,19 +35,8 @@ public sealed class Release
     public bool IsFinished => Phase is ReleasePhase.Succeeded or ReleasePhase.Failed;
 
     public static Release Queue(ReleaseId id, AppId appId, ImageReference image, ReleaseTrigger trigger, DateTimeOffset now) =>
-        new(id, appId, image, null, trigger, ReleasePhase.Queued, null, now, null);
+        new(id, appId, image, trigger, ReleasePhase.Queued, now);
 
-    public static Release Restore(
-        ReleaseId id,
-        AppId appId,
-        ImageReference image,
-        string? imageDigest,
-        ReleaseTrigger trigger,
-        ReleasePhase phase,
-        ReleaseFailure? failure,
-        DateTimeOffset createdAt,
-        DateTimeOffset? finishedAt) =>
-        new(id, appId, image, imageDigest, trigger, phase, failure, createdAt, finishedAt);
 
     public void BeginApplying() => Phase = ReleasePhase.Applying;
 

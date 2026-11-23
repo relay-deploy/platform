@@ -5,11 +5,11 @@ using Relay.Platform.Domain.Apps;
 
 namespace Relay.Platform.Application.Apps;
 
-public sealed class RemoveApp(IAppRepository apps, IContainerRuntime runtime, IUnitOfWork unitOfWork, TimeProvider time)
+public sealed class RemoveApp(IPlatformDbContext db, IContainerRuntime runtime, TimeProvider time)
 {
     public async Task<Result> Handle(AppId id, CancellationToken cancellationToken)
     {
-        var app = await apps.Find(id, cancellationToken);
+        var app = await db.Apps.ById(id, cancellationToken);
         if (app is null)
         {
             return AppErrors.NotFound(id);
@@ -27,8 +27,7 @@ public sealed class RemoveApp(IAppRepository apps, IContainerRuntime runtime, IU
         }
 
         app.Remove(time.GetUtcNow());
-        await apps.Update(app, cancellationToken);
-        await unitOfWork.Commit(cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }
 }
