@@ -24,6 +24,26 @@ namespace Relay.Platform.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Relay.Chassis.Postgres.Events.EventCursor", b =>
+                {
+                    b.Property<string>("Source")
+                        .HasColumnType("text")
+                        .HasColumnName("source");
+
+                    b.Property<long>("Sequence")
+                        .HasColumnType("bigint")
+                        .HasColumnName("sequence");
+
+                    b.Property<long>("TransactionId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("transaction_id");
+
+                    b.HasKey("Source")
+                        .HasName("pk_event_cursors");
+
+                    b.ToTable("event_cursors", "platform");
+                });
+
             modelBuilder.Entity("Relay.Chassis.Postgres.Jobs.JobRecord", b =>
                 {
                     b.Property<Guid>("Id")

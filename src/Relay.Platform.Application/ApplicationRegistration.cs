@@ -23,6 +23,7 @@ public static class ApplicationRegistration
         services.AddScoped<RestartApp>();
         services.AddScoped<StopApp>();
         services.AddScoped<RemoveApp>();
+        services.AddScoped<RecordWorkloadObservation>();
         services.AddScoped<ApplyRelease>();
         services.AddScoped<GetRelease>();
         services.AddScoped<ListReleases>();

@@ -63,6 +63,16 @@ public sealed class App
 
     public void Observe(AppPhase phase, DateTimeOffset now) => Status = Status with { Phase = phase, ObservedAt = now };
 
+    public void ObserveWorkload(ReleaseId release, AppPhase phase, DateTimeOffset observedAt)
+    {
+        if (IsRemoved || Status.Phase == AppPhase.Deploying || Status.CurrentRelease != release || observedAt < Status.ObservedAt)
+        {
+            return;
+        }
+
+        Status = Status with { Phase = phase, ObservedAt = observedAt };
+    }
+
     public void Remove(DateTimeOffset now)
     {
         if (IsRemoved)
