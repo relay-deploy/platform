@@ -21,10 +21,11 @@ public static class InfrastructureRegistration
         services.AddOptions<SecretsOptions>().BindConfiguration(SecretsOptions.Section).ValidateDataAnnotations().ValidateOnStart();
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<SecretsOptions>, SecretsOptionsValidator>());
         services.AddSingleton<ISecretCipher, AesGcmSecretCipher>();
-        services.AddRelayPostgres<PlatformDbContext>(PlatformDbContext.Schema).AddRelayJobs<PlatformDbContext>();
+        services.AddRelayPostgres<PlatformDbContext>(PlatformDbContext.Schema).AddRelayJobs<PlatformDbContext>().AddRelayOutbox<PlatformDbContext>();
         services.AddScoped<IPlatformDbContext>(provider => provider.GetRequiredService<PlatformDbContext>());
         services.AddOptions<RuntimeOptions>().BindConfiguration(RuntimeOptions.Section).ValidateDataAnnotations().ValidateOnStart();
 
+        services.AddScoped<IReleaseEvents, OutboxReleaseEvents>();
         services.AddScoped<IReleaseScheduler, JobReleaseScheduler>();
         services.AddScoped<IContainerRuntime, GrpcContainerRuntime>();
         services.AddRelayGrpcClient<RuntimeService.RuntimeServiceClient>(provider =>

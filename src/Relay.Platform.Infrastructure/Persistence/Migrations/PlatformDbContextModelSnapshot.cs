@@ -107,6 +107,56 @@ namespace Relay.Platform.Infrastructure.Persistence.Migrations
                     b.ToTable("jobs", "platform");
                 });
 
+            modelBuilder.Entity("Relay.Chassis.Postgres.Outbox.OutboxEvent", b =>
+                {
+                    b.Property<long>("Sequence")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("sequence");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Sequence"));
+
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("payload");
+
+                    b.Property<Guid?>("SubjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subject_id");
+
+                    b.Property<long>("TransactionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("transaction_id")
+                        .HasDefaultValueSql("(pg_current_xact_id()::text)::bigint");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("type");
+
+                    b.HasKey("Sequence")
+                        .HasName("pk_outbox_events");
+
+                    b.HasIndex("Id")
+                        .IsUnique()
+                        .HasDatabaseName("ix_outbox_events_id");
+
+                    b.HasIndex("TransactionId", "Sequence")
+                        .HasDatabaseName("ix_outbox_events_transaction_id_sequence");
+
+                    b.ToTable("outbox_events", "platform");
+                });
+
             modelBuilder.Entity("Relay.Platform.Domain.Apps.App", b =>
                 {
                     b.Property<Guid>("Id")

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Relay.Chassis.Postgres;
 using Relay.Chassis.Postgres.Events;
 using Relay.Chassis.Postgres.Jobs;
+using Relay.Chassis.Postgres.Outbox;
 using Relay.Platform.Application.Persistence;
 using Relay.Platform.Domain.Apps;
 using Relay.Platform.Domain.EnvVars;
@@ -13,7 +14,7 @@ using Relay.Platform.Infrastructure.Secrets;
 
 namespace Relay.Platform.Infrastructure.Persistence;
 
-public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> options, ISecretCipher cipher) : DbContext(options), IPlatformDbContext, IJobContext, IEventCursorContext
+public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> options, ISecretCipher cipher) : DbContext(options), IPlatformDbContext, IJobContext, IEventCursorContext, IOutboxContext
 {
     public const string Schema = "platform";
 
@@ -29,12 +30,14 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
 
     public DbSet<EventCursor> EventCursors => Set<EventCursor>();
 
+    public DbSet<OutboxEvent> OutboxEvents => Set<OutboxEvent>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema(Schema);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(PlatformDbContext).Assembly);
         modelBuilder.Entity<EnvVar>().Property(envVar => envVar.Value).HasConversion(new EncryptedStringConverter(cipher));
-        modelBuilder.MapRelayJobs().MapRelayEventCursors();
+        modelBuilder.MapRelayJobs().MapRelayEventCursors().MapRelayOutbox();
     }
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
