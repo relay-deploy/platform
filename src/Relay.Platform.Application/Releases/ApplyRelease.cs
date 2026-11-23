@@ -10,7 +10,7 @@ using Relay.Platform.Domain.Releases;
 
 namespace Relay.Platform.Application.Releases;
 
-public sealed class ApplyRelease(IPlatformDbContext db, IContainerRuntime runtime, TimeProvider time)
+public sealed class ApplyRelease(IPlatformDbContext db, IContainerRuntime runtime, IReleaseEvents events, TimeProvider time)
 {
     public async Task<Result> Handle(ApplyReleaseCommand command, CancellationToken cancellationToken)
     {
@@ -44,6 +44,7 @@ public sealed class ApplyRelease(IPlatformDbContext db, IContainerRuntime runtim
             var now = time.GetUtcNow();
             release.Succeed(applied.Value.ImageDigest, now);
             app.GoLive(release.Id, applied.Value.Phase, now);
+            events.Succeeded(app, release);
             await db.SaveChangesAsync(cancellationToken);
             return Result.Success();
         }
@@ -65,6 +66,7 @@ public sealed class ApplyRelease(IPlatformDbContext db, IContainerRuntime runtim
         var now = time.GetUtcNow();
         release.Fail(new ReleaseFailure(error.Code, error.Message), now);
         app.Observe(observed.IsSuccess ? observed.Value.Phase : PhaseWithoutWorkload(app), now);
+        events.Failed(app, release);
         await db.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }
