@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageVersion Include="Relay.Chassis" Version="0.1.0" />
+    <PackageVersion Include="Relay.Chassis.Primitives" Version="0.1.0" />
+  </ItemGroup>
+</Project>
