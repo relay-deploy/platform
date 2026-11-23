@@ -21,7 +21,7 @@ public static class InfrastructureRegistration
         services.AddOptions<SecretsOptions>().BindConfiguration(SecretsOptions.Section).ValidateDataAnnotations().ValidateOnStart();
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<SecretsOptions>, SecretsOptionsValidator>());
         services.AddSingleton<ISecretCipher, AesGcmSecretCipher>();
-        services.AddRelayPostgres<PlatformDbContext>(PlatformDbContext.Schema);
+        services.AddRelayPostgres<PlatformDbContext>(PlatformDbContext.Schema).AddRelayJobs<PlatformDbContext>();
         services.AddScoped<IPlatformDbContext>(provider => provider.GetRequiredService<PlatformDbContext>());
         services.AddOptions<RuntimeOptions>().BindConfiguration(RuntimeOptions.Section).ValidateDataAnnotations().ValidateOnStart();
 
@@ -30,6 +30,11 @@ public static class InfrastructureRegistration
         services.AddRelayGrpcClient<RuntimeService.RuntimeServiceClient>(provider =>
             provider.GetRequiredService<IOptions<RuntimeOptions>>().Value.Address!);
         services.AddRelayJob<ApplyReleaseJob, ApplyReleaseJobHandler>();
+
+        services.AddRelayEventSubscription<PlatformDbContext>(RuntimeEvents.Source);
+        services.AddRelayEventConsumer<WorkloadCrashed, WorkloadEventConsumer>(RuntimeEvents.Source);
+        services.AddRelayEventConsumer<WorkloadRecovered, WorkloadEventConsumer>(RuntimeEvents.Source);
+        services.AddRelayEventConsumer<WorkloadStopped, WorkloadEventConsumer>(RuntimeEvents.Source);
         return services;
     }
 }
