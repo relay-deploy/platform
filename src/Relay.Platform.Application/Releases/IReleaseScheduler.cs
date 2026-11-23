@@ -4,5 +4,5 @@ namespace Relay.Platform.Application.Releases;
 
 public interface IReleaseScheduler
 {
-    Task Schedule(ReleaseId release, CancellationToken cancellationToken);
+    void Schedule(ReleaseId release);
 }

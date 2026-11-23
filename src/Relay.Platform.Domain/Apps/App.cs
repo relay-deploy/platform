@@ -7,15 +7,14 @@ namespace Relay.Platform.Domain.Apps;
 
 public sealed class App
 {
-    private App(AppId id, ProjectId projectId, ResourceName name, AppSpec spec, AppStatus status, DateTimeOffset createdAt, DateTimeOffset? removedAt)
+    private App(AppId id, ProjectId projectId, ResourceName name, DateTimeOffset createdAt, DateTimeOffset? removedAt)
     {
         Id = id;
         ProjectId = projectId;
         Name = name;
-        Spec = spec;
-        Status = status;
         CreatedAt = createdAt;
         RemovedAt = removedAt;
+        Status = new AppStatus(AppPhase.NotDeployed, null, createdAt);
     }
 
     public AppId Id { get; }
@@ -24,7 +23,7 @@ public sealed class App
 
     public ResourceName Name { get; }
 
-    public AppSpec Spec { get; }
+    public required AppSpec Spec { get; init; }
 
     public AppStatus Status { get; private set; }
 
@@ -35,10 +34,7 @@ public sealed class App
     public bool IsRemoved => RemovedAt is not null;
 
     public static App Create(AppId id, ProjectId projectId, ResourceName name, AppSpec spec, DateTimeOffset now) =>
-        new(id, projectId, name, spec, new AppStatus(AppPhase.NotDeployed, null, now), now, null);
-
-    public static App Restore(AppId id, ProjectId projectId, ResourceName name, AppSpec spec, AppStatus status, DateTimeOffset createdAt, DateTimeOffset? removedAt) =>
-        new(id, projectId, name, spec, status, createdAt, removedAt);
+        new(id, projectId, name, now, null) { Spec = spec };
 
     public Result EnsureActive() => IsRemoved ? AppErrors.Removed(Id) : Result.Success();
 

@@ -5,11 +5,11 @@ using Relay.Platform.Domain.Projects;
 
 namespace Relay.Platform.Application.Projects;
 
-public sealed class CreateProject(IProjectRepository projects, IUnitOfWork unitOfWork, TimeProvider time)
+public sealed class CreateProject(IPlatformDbContext db, TimeProvider time)
 {
     public async Task<Result<Project>> Handle(CreateProjectCommand command, CancellationToken cancellationToken)
     {
-        var existing = await projects.Find(command.Id, cancellationToken);
+        var existing = await db.Projects.ById(command.Id, cancellationToken);
         if (existing is not null)
         {
             return existing;
@@ -21,14 +21,14 @@ public sealed class CreateProject(IProjectRepository projects, IUnitOfWork unitO
             return name.Error;
         }
 
-        if (await projects.NameTaken(name.Value, cancellationToken))
+        if (await db.Projects.NameTaken(name.Value, cancellationToken))
         {
             return ProjectErrors.NameTaken(name.Value);
         }
 
-        var project = new Project(command.Id, name.Value, time.GetUtcNow());
-        await projects.Add(project, cancellationToken);
-        await unitOfWork.Commit(cancellationToken);
-        return project;
+        var created = new Project(command.Id, name.Value, time.GetUtcNow());
+        db.Projects.Add(created);
+        await db.SaveChangesAsync(cancellationToken);
+        return created;
     }
 }

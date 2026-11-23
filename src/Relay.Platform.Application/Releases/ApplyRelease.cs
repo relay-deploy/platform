@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Relay.Chassis.Primitives;
 using Relay.Platform.Application.Apps;
 using Relay.Platform.Application.Persistence;
@@ -8,17 +9,11 @@ using Relay.Platform.Domain.Releases;
 
 namespace Relay.Platform.Application.Releases;
 
-public sealed class ApplyRelease(
-    IReleaseRepository releases,
-    IAppRepository apps,
-    IProjectRepository projects,
-    IContainerRuntime runtime,
-    IUnitOfWork unitOfWork,
-    TimeProvider time)
+public sealed class ApplyRelease(IPlatformDbContext db, IContainerRuntime runtime, TimeProvider time)
 {
     public async Task<Result> Handle(ApplyReleaseCommand command, CancellationToken cancellationToken)
     {
-        var release = await releases.Find(command.Release, cancellationToken);
+        var release = await db.Releases.ById(command.Release, cancellationToken);
         if (release is null)
         {
             return ReleaseErrors.NotFound(command.Release);
@@ -29,19 +24,17 @@ public sealed class ApplyRelease(
             return Result.Success();
         }
 
-        var app = await apps.Find(release.AppId, cancellationToken);
-        var project = app is null ? null : await projects.Find(app.ProjectId, cancellationToken);
+        var app = await db.Apps.ById(release.AppId, cancellationToken);
+        var project = app is null ? null : await db.Projects.AsNoTracking().ById(app.ProjectId, cancellationToken);
         if (app is null || project is null || app.IsRemoved)
         {
             release.Fail(new ReleaseFailure("app.removed", "The app was removed before the release was applied."), time.GetUtcNow());
-            await releases.Update(release, cancellationToken);
-            await unitOfWork.Commit(cancellationToken);
+            await db.SaveChangesAsync(cancellationToken);
             return Result.Success();
         }
 
         release.BeginApplying();
-        await releases.Update(release, cancellationToken);
-        await unitOfWork.Commit(cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
 
         var applied = await runtime.Apply(project, app, release, cancellationToken);
         if (applied.IsSuccess)
@@ -49,7 +42,8 @@ public sealed class ApplyRelease(
             var now = time.GetUtcNow();
             release.Succeed(applied.Value.ImageDigest, now);
             app.GoLive(release.Id, applied.Value.Phase, now);
-            return await Save(release, app, cancellationToken);
+            await db.SaveChangesAsync(cancellationToken);
+            return Result.Success();
         }
 
         if (applied.Error.Kind == ErrorKind.Unavailable && !command.IsLastAttempt)
@@ -69,14 +63,7 @@ public sealed class ApplyRelease(
         var now = time.GetUtcNow();
         release.Fail(new ReleaseFailure(error.Code, error.Message), now);
         app.Observe(observed.IsSuccess ? observed.Value.Phase : PhaseWithoutWorkload(app), now);
-        return await Save(release, app, cancellationToken);
-    }
-
-    private async Task<Result> Save(Release release, App app, CancellationToken cancellationToken)
-    {
-        await releases.Update(release, cancellationToken);
-        await apps.Update(app, cancellationToken);
-        await unitOfWork.Commit(cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }
 }
