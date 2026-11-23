@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Relay.Chassis.Primitives;
 using Relay.Platform.Application.Apps;
+using Relay.Platform.Application.EnvVars;
 using Relay.Platform.Application.Persistence;
 using Relay.Platform.Application.Projects;
 using Relay.Platform.Application.Runtime;
@@ -36,7 +37,8 @@ public sealed class ApplyRelease(IPlatformDbContext db, IContainerRuntime runtim
         release.BeginApplying();
         await db.SaveChangesAsync(cancellationToken);
 
-        var applied = await runtime.Apply(project, app, release, cancellationToken);
+        var environment = await db.EnvVars.AsNoTracking().ResolveFor(project.Id, app.Id, cancellationToken);
+        var applied = await runtime.Apply(project, app, release, environment, cancellationToken);
         if (applied.IsSuccess)
         {
             var now = time.GetUtcNow();
